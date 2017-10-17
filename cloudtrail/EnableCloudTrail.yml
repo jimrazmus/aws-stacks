@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Enable AWS Security CloudTrail
+
+Parameters:
+  NameOfTrailBucket:
+    Description: 'Name of the Amazon S3 bucket where CloudTrail publishes log files'
+    Type: String
+    Default: ''
+  ArnForKMSKey:
+    Description: 'Arn of the KMS key to encrypt log files'
+    Type: String
+    Default: ''
+  DaysToRetain:
+    Description: 'Number of days log events are kept in CloudWatch Logs'
+    Type: Number
+    Default: 3653
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+
+Resources:
+  CloudWatchLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      RetentionInDays: !Ref DaysToRetain
+
+  CloudWatchLogsRole:
+    Type: "AWS::IAM::Role"
+    DependsOn:
+      - CloudWatchLogGroup
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AWSCloudTrailAssumeRole2014110"
+            Effect: "Allow"
+            Action: "sts:AssumeRole"
+            Principal:
+              Service:
+                - "cloudtrail.amazonaws.com"
+      Path: /
+      Policies:
+        -
+          PolicyName: "CloudTrailCreateLogStream"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: "AWSCloudTrailCreateLogStream2014110"
+                Effect: "Allow"
+                Action:
+                  - "logs:CreateLogStream"
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:log-stream:${AWS::AccountId}_CloudTrail_${AWS::Region}*"
+        -
+          PolicyName: "CloudTrailPutLogEvents"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: "AWSCloudTrailPutLogEvents2014110"
+                Effect: "Allow"
+                Action:
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:log-stream:${AWS::AccountId}_CloudTrail_${AWS::Region}*"
+
+  Trail:
+    Type: AWS::CloudTrail::Trail
+    DependsOn:
+      - CloudWatchLogGroup
+      - CloudWatchLogsRole
+    Properties:
+      CloudWatchLogsLogGroupArn: !GetAtt CloudWatchLogGroup.Arn
+      CloudWatchLogsRoleArn: !GetAtt CloudWatchLogsRole.Arn
+      EnableLogFileValidation: True
+      IncludeGlobalServiceEvents: True
+      IsLogging: True
+      IsMultiRegionTrail: True
+      KMSKeyId: !Ref ArnForKMSKey
+      S3BucketName: !Ref NameOfTrailBucket
