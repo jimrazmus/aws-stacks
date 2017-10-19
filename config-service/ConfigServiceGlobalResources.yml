@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Global Config Service Resources
+
+Resources:
+
+  ConfigBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "config-bucket-${AWS::AccountId}"
+
+  ConfigRecorderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSConfigRole
+      Path: /
+      Policies:
+        - PolicyName: ConfigGetAclAndObjPut
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - s3:GetBucketAcl
+                Effect: Allow
+                Resource:
+                  - !Sub "arn:aws:s3:::config-bucket-${AWS::AccountId}"
+              - Action:
+                  - s3:PutObject
+                Effect: Allow
+                Condition:
+                  StringLike:
+                    s3:x-amz-acl: bucket-owner-full-control
+                Resource:
+                  - !Sub "arn:aws:s3:::config-bucket-${AWS::AccountId}/AWSLogs/${AWS::AccountId}/*"
+      RoleName: 'config-recorder-role'

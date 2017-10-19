@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Regional Config Service Resources
+
+Conditions:
+  
+  IsUsEast1: !Equals
+    - !Ref 'AWS::Region'
+    - us-east-1
+
+Resources:
+
+  ConfigRecorder:
+    Type: AWS::Config::ConfigurationRecorder
+    Properties:
+      RoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/config-recorder-role"
+      RecordingGroup:
+        AllSupported: True
+        IncludeGlobalResourceTypes: !If
+          - IsUsEast1
+          - 'True'
+          - 'False'
+
+  ConfigDeliveryChannel:
+    Type: AWS::Config::DeliveryChannel
+    Properties:
+      ConfigSnapshotDeliveryProperties:
+        DeliveryFrequency: TwentyFour_Hours
+      S3BucketName: !Sub "config-bucket-${AWS::AccountId}"
+      S3KeyPrefix: !Sub "AWSLogs/${AWS::AccountId}"
