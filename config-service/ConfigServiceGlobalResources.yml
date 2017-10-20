@@ -7,6 +7,10 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "config-bucket-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: 7
+            Status: Enabled
 
   ConfigRecorderRole:
     Type: AWS::IAM::Role
