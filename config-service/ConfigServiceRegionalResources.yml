@@ -2,10 +2,8 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: Regional Config Service Resources
 
 Conditions:
-  
-  IsUsEast1: !Equals
-    - !Ref 'AWS::Region'
-    - us-east-1
+
+  IsUsEast1: !Equals ["us-east-1", !Ref "AWS::Region"]
 
 Resources:
 
@@ -15,10 +13,7 @@ Resources:
       RoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/config-recorder-role"
       RecordingGroup:
         AllSupported: True
-        IncludeGlobalResourceTypes: !If
-          - IsUsEast1
-          - 'True'
-          - 'False'
+        IncludeGlobalResourceTypes: !If [IsUsEast1, 'True', 'False']
 
   ConfigDeliveryChannel:
     Type: AWS::Config::DeliveryChannel
